@@ -1,21 +1,35 @@
 cmake_minimum_required(VERSION 3.14)
 
-set(PROJECT_NAME cmake_project_example) #set은 변수세팅 키워드. Project_Name 이라는 변수에  cmake_project_example 의 string 을 넣어준다.
+set(PROJECT_NAME cmake_project_example)
+set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_CXX_STANDARD 17) #CMAKE 로 시작하는 변수는 전역변수이다. 컴파일 옵션등을 바꿀 때 사용됨. 여기서는 CXX(C++) StanDard 17을 사용한다는 말.
+project(${PROJECT_NAME})
 
+add_executable(${PROJECT_NAME} src/main.cpp)
 
-project(${PROJECT_NAME}) # ${} 중괄호 안에 변수 이름을 넣으면 변수에 저장된 값을 꺼내 쓸 수 있다. 그냥 Project_Name 을 넣으면 string 으로 들어감. project 키워드는 프로젝트를 실행한다는 말이다.
+include(ExternalProject)
 
-add_executable(${PROJECT_NAME} src/main.cpp) #${PROJECT_NAME} 이름으로 src/main.cpp 에 있는 모든 파일을 컴파일해서 실행파일로 만든다는 명령어이다.
+set(DEP_INSTALL_DIR ${PROJECT_BINARY_DIR}/install)
+set(DEP_INCLUDE_DIR ${DEP_INSTALL_DIR}/include)
+set(DEP_LIB_DIR ${DEP_INSTALL_DIR}/lib)
 
+ExternalProject_Add(
+    dep-spdlog
+    GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
+    GIT_TAG "v1.x"
+    GIT_SHALLOW 1
+    UPDATE_COMMAND ""
+    PATCH_COMMAND ""
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEP_INSTALL_DIR}
+    TEST_COMMAND ""
+)
 
+# Dependency 리스트 및 라이브러리 파일 리스트 추가
+set(DEP_LIST dep-spdlog)
+set(DEP_LIBS ${DEP_LIB_DIR}/spdlog$<$<CONFIG:Debug>:d>.lib)
 
-#터미널에 cmake -Bbuild . -DCMAKE_BUILD_TYPE=Debug 로 vs실행파일 만듦.
-
-# -B : 빌드 할 폴더를 지정 , build 라는 폴더가 생기고 그 안에 sln파일이 생김
-
-# 그 뒤에 . 은 CMAKELIST.txt 의 루트 디렉토리를 지정해주는건데 .이 현재 디렉토리를 가리키니깐 따로 주소를 입력하지 않고 . 으로 지정해준다..
-
-
-
+# 프로젝트에 include 및 lib 디렉토리 추가
+add_dependencies(${PROJECT_NAME} ${DEP_LIST})
+target_include_directories(${PROJECT_NAME} PUBLIC ${DEP_INCLUDE_DIR})
+target_link_directories(${PROJECT_NAME} PUBLIC ${DEP_LIB_DIR})
+target_link_libraries(${PROJECT_NAME} PUBLIC ${DEP_LIBS})
